@@ -1,24 +1,38 @@
 import uk.gov.hmrc.DefaultBuildSettings
 
 ThisBuild / majorVersion := 0
-ThisBuild / scalaVersion := "3.3.6"
-ThisBuild / scalacOptions += "-Wconf:msg=Flag.*repeatedly:s"
+ThisBuild / scalaVersion := "3.3.7"
 
-lazy val microservice = Project("compatible-address-lookup-frontend", file("."))
+val appName = "compatible-address-lookup-frontend"
+
+lazy val microservice = Project(appName, file("."))
   .enablePlugins(play.sbt.PlayScala, SbtDistributablesPlugin)
-  .disablePlugins(JUnitXmlReportPlugin) //Required to prevent https://github.com/scalatest/scalatest/issues/1427
   .settings(
     libraryDependencies ++= AppDependencies.compile ++ AppDependencies.test,
+    TwirlKeys.templateImports ++= Seq(
+      "play.twirl.api.HtmlFormat",
+      "play.twirl.api.HtmlFormat._",
+      "uk.gov.hmrc.govukfrontend.views.html.components._",
+      "uk.gov.hmrc.hmrcfrontend.views.html.components._",
+      "uk.gov.hmrc.hmrcfrontend.views.html.helpers._",
+      "uk.gov.hmrc.hmrcfrontend.views.config._",
+      "controllers.routes._"
+    ),
     // https://www.scala-lang.org/2021/01/12/configuring-and-suppressing-warnings.html
     // suppress warnings in generated routes files
     scalacOptions += "-Wconf:src=routes/.*:s",
-    scalacOptions += "-Wconf:msg=unused import&src=html/.*:s",
-    pipelineStages := Seq(gzip),
+    scalacOptions += "-Wconf:msg=unused import&src=html/.*:s"
   )
-  .settings(CodeCoverageSettings.settings: _*)
+  // This intentionally clashes with the port of address-lookup-frontend
+  .settings(PlayKeys.playDefaultPort := 9028)
+  .settings(CodeCoverageSettings.settings *)
 
-lazy val it = project
-  .enablePlugins(PlayScala)
+lazy val it = project.in(file("it"))
+  .enablePlugins(play.sbt.PlayScala)
   .dependsOn(microservice % "test->test")
+  .settings(
+    libraryDependencies ++= AppDependencies.it,
+    Test / javaOptions += "-Dlogger.resource=logback-test.xml",
+    Test / parallelExecution := false
+  )
   .settings(DefaultBuildSettings.itSettings())
-  .settings(libraryDependencies ++= AppDependencies.it)

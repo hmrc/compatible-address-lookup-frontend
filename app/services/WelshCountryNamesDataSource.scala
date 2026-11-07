@@ -1,0 +1,249 @@
+/*
+ * Copyright 2024 HM Revenue & Customs
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+package services
+
+import address.v2.Country
+import com.github.tototoshi.csv.{CSVFormat, CSVReader, DefaultCSVFormat}
+import org.apache.pekko.stream.Materializer
+import org.jsoup.Jsoup
+import play.api.{Configuration, Logging}
+import uk.gov.hmrc.http.HeaderCarrier
+import uk.gov.hmrc.objectstore.client.Path
+import uk.gov.hmrc.objectstore.client.play.Implicits.*
+import uk.gov.hmrc.objectstore.client.play.PlayObjectStoreClient
+
+import java.io.InputStream
+import java.net.{InetSocketAddress, Proxy, URI}
+import java.nio.charset.StandardCharsets
+import javax.inject.{Inject, Singleton}
+import scala.collection.View
+import scala.collection.immutable.SortedMap
+import scala.concurrent.{ExecutionContext, Future}
+import scala.io.Source
+import scala.util.Using
+
+@Singleton
+class WelshCountryNamesDataSource @Inject() (english: EnglishCountryNamesDataSource) extends CountryNamesDataSource with Logging {
+
+  private def streamToString(stream: InputStream): String = {
+    Source.fromInputStream(stream).getLines().toList.mkString("\n")
+  }
+
+  protected val mutable: java.util.Deque[CachedData] = new java.util.concurrent.ConcurrentLinkedDeque()
+
+  private val localData: String = streamToString(getClass.getResourceAsStream("/welsh-country-names.csv"))
+  mutable.add(CachedData("", localData))
+
+  def updateCache(): Future[Unit] = Future successful()
+
+  def retrieveAndStoreData(): Future[Unit] = Future successful()
+
+  private val allAliasesCY = allAliases("/countryAliasesCY.csv")
+
+  private val allWCORows = CSVReader.open(Source.fromInputStream(getClass.getResourceAsStream("/wco-countries.csv"), "UTF-8"))
+    .allWithOrderedHeaders()._2.sortBy(x => x("Country"))
+    .groupBy(_("Country"))
+    .view.mapValues(v => v.head)
+
+  private[services] def allGovWalesRows(govWalesData: String): View[(String, Map[String, String])] = {
+    //There was a bug introduced where the Welsh Government published a CSV that had `Column1,Column2,...` at the top of the file
+    //This code pre-reads the CSV to find the actual header row and then re-reads it from there. It also now caters for both ',' and ';' delimiters
+
+    val lines = Source.fromString(govWalesData).getLines().toList
+    logger.debug("[allGovWalesRows] - Sample of govWalesData retrieved:\n" + lines.take(5).mkString("\n"))
+
+    //Find index of header row
+    val headerIdx = lines.indexWhere(_.contains("Cod gwlad (Country code)"))
+
+    //work out delimiter due to Welsh Gov switching between comma and semicolon. This logic is crude but effective, and safer
+    //than just mass replacing one-delimiter with another
+    val commaCount = lines(headerIdx).count(_ == ',')
+    val semicolonCount = lines(headerIdx).count(_ == ';')
+    val parserFormat: CSVFormat = if(commaCount > semicolonCount) CSVFormat.defaultCSVFormat else {
+      new DefaultCSVFormat {
+        override val delimiter: Char = ';'
+      }
+    }
+
+    val csvContent = lines.drop(headerIdx).mkString("\n")
+
+    // check if each line starts and ends with a quote (and no other quotes within the line), if so remove the quotes from each line, this is to cater for a bug in the Welsh Gov CSV where they have added quotes around the entire line
+    // which means the CSV doesn't conform to RFC 4180 and the CSV parser fails to parse it correctly. This is a workaround to fix that issue.
+    val cleanedCsvContent = csvContent.linesIterator.map { line =>
+      if (line.startsWith("\"") && line.endsWith("\"") && line.count(_ == '"') == 2) {
+        line.substring(1, line.length - 1)
+      } else {
+        line
+      }
+    }.mkString("\n")
+
+    val reader = CSVReader.open(Source.fromString(cleanedCsvContent))(parserFormat)
+
+    reader.allWithOrderedHeaders()._2
+      .sortBy(x => x("Cod gwlad (Country code)"))
+      .groupBy(_("Cod gwlad (Country code)"))
+      .view.mapValues(v => v.head)
+      .map { case (k, m) => k -> Map("Country" -> m("Cod gwlad (Country code)"), "Name" -> m("Enw yn Gymraeg (Name in Welsh)")) }
+  }
+
+  private def countriesCYFull(govWalesData: String): Seq[Country] =
+    SortedMap.from(english.allISORows ++ english.allFCDORows ++ english.allFCDOTRows ++ allWCORows ++ allGovWalesRows(govWalesData))
+      .map(Country.apply)
+      .toSeq.sortWith { case (a, b) => utfSorter.compare(a.name, b.name) < 0 }
+
+  private def countriesWithAliases(govWalesData: String) = {
+    countriesCYFull(govWalesData).flatMap { country =>
+      if (allAliasesCY.contains(country.code)) country +: allAliasesCY(country.code)
+      else Seq(country)
+    }
+  }
+
+  def countriesCY: Seq[Country] =
+    countriesWithAliases(mutable.peekFirst().data)
+}
+
+@Singleton
+class WelshCountryNamesObjectStoreDataSource  @Inject() (
+                                                          englishCountryNamesDataSource: EnglishCountryNamesDataSource,
+                                                          objectStore: PlayObjectStoreClient,
+                                                          config: Configuration,
+                                                          implicit val ec: ExecutionContext,
+                                                          implicit val materializer: Materializer) extends WelshCountryNamesDataSource(englishCountryNamesDataSource) with Logging {
+
+  private val objectStorePath = Path.Directory("govwales").file("country-names.csv")
+
+
+  val outboundProxy: Option[(String, Int)] = {
+    val maybeHost = config.getOptional[String]("proxy.host").map(_.trim).filter(_.nonEmpty)
+    val maybePort = config.getOptional[Int]("proxy.port")
+
+    (maybeHost, maybePort) match {
+      case (Some(host), Some(port)) =>
+        logger.info("[outboundProxy] - Gov Wales proxy defined")
+        Some((host, port))
+      case (Some(_), None) =>
+        logger.warn("[outboundProxy] - Gov Wales proxy host is set but port is missing; proceeding without proxy")
+        None
+      case (None, Some(_)) =>
+        logger.warn("[outboundProxy] - Gov Wales proxy port is set but host is missing; proceeding without proxy")
+        None
+      case _ =>
+        logger.warn("[outboundProxy] - Gov Wales proxy is not defined")
+        None
+    }
+  }
+
+  protected[services] def resolveGovWalesDownloadUrl(): String = {
+    logger.info("[resolveGovWalesDownloadUrl] - Resolving Welsh Government country names download URL")
+
+    val connection = Jsoup.connect("https://www.gov.wales/bydtermcymru/international-place-names")
+    outboundProxy.foreach { case (host, port) => connection.proxy(host, port) }
+
+    connection
+      .get()
+      .select("a:containsOwn(Enwau gwledydd)")
+      .attr("abs:href")
+  }
+
+  protected[services] def downloadContent(url: String): String = {
+    logger.info(s"[downloadContent] - Downloading Welsh Government country names data from URL: $url")
+
+    Using.resource {
+      val targetUrl = URI.create(url).toURL
+      val connection = outboundProxy
+        .map { case (host, port) =>
+          val proxy = new Proxy(Proxy.Type.HTTP, new InetSocketAddress(host, port))
+          targetUrl.openConnection(proxy)
+        }
+        .getOrElse(targetUrl.openConnection())
+
+      connection.getInputStream
+    } { in =>
+      new String(in.readAllBytes(), StandardCharsets.UTF_8)
+    }
+  }
+
+  override def retrieveAndStoreData(): Future[Unit] = {
+    try {
+      val content = downloadContent(resolveGovWalesDownloadUrl())
+
+      logger.debug("[retrieveAndStoreData] - Sample of data retrieved from Welsh Government:\n" + content.take(500))
+
+      implicit val hc: HeaderCarrier = new HeaderCarrier()
+
+      val csv = CSVReader.open(Source.fromString(content))
+
+      // Check the integrity of the data file before caching it
+      if (csv.allWithHeaders().length > 1) {
+          mutable.addFirst(CachedData("", content))
+          if (mutable.size() > 1) mutable.removeLast()
+
+          logger.info("[retrieveAndStoreData] - Refreshed welsh country name data from third party source")
+
+          objectStore.putObject(path = objectStorePath, content, contentType = Some("text/plain"))
+            .map(_ => logger.info("[retrieveAndStoreData] - Wrote welsh country name data to object-store successfully"))
+            .recoverWith { case e =>
+              logger.error("[retrieveAndStoreData][Error] - Could not write welsh country name data to object-store", e)
+              Future successful()
+            }
+      }
+      else {
+        logger.error(s"[retrieveAndStoreData][Error] - Error parsing welsh country name data from third party, unexpected file contents")
+        Future successful()
+      }
+
+    } catch {
+      case e: Exception =>
+        logger.error("[retrieveAndStoreData][Error] - Welsh country name data retrieval and storage failed", e)
+        Future successful()
+    }
+  }
+
+  override def updateCache(): Future[Unit] = {
+    try {
+      implicit val hc: HeaderCarrier = new HeaderCarrier()
+
+      import uk.gov.hmrc.objectstore.client.play.Implicits.InMemoryReads.*
+
+      objectStore.getObject[String](objectStorePath).map {
+        case Some(obj) =>
+          val csv = CSVReader.open(Source.fromString(obj.content))
+
+          if (csv.allWithHeaders().length > 1) {
+            mutable.addFirst(CachedData("", obj.content))
+            if (mutable.size() > 1) mutable.removeLast()
+            logger.info("[updateCache] - Refreshed welsh country name data cache from object-store")
+          }
+          else {
+            logger.error("[updateCache][Error] - Error parsing welsh country name data cache from object-store, unexpected file contents")
+          }
+        case None =>
+          logger.warn("[updateCache] - Did not find welsh country name data in object-store (it may not have been initialised yet)")
+      }.recoverWith { case e =>
+        logger.error("[updateCache][Error] - Could not read welsh country name from object-store", e)
+        Future successful()
+      }
+
+    } catch {
+      case e: Exception =>
+        logger.error("[updateCache][Error] - Welsh country name data cache initialisation failed", e)
+        Future successful()
+    }
+  }
+}
+
+case class CachedData(checksum: String, data: String)
