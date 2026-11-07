@@ -1,0 +1,47 @@
+@*
+ * Copyright 2024 HM Revenue & Customs
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ *@
+
+@import config.FrontendAppConfig
+@import views.html.helper.{form, textarea}
+@import views.html.templates.Layout
+@import model.v2.{JourneyDataV2, JourneyConfigV2, JourneyOptions}
+
+@this(form: FormWithCSRF, textarea: GovukTextarea, button: GovukButton, page: Layout)
+@(stubForm: Form[String])(implicit request: Request[?], messages: Messages, appConfig: FrontendAppConfig)
+
+@dummyJourney = @{
+    JourneyDataV2(JourneyConfigV2(2, JourneyOptions("")))
+}
+
+@page("Stub For starting new journey in ALF with V2 config", dummyJourney) {
+
+    @form(controllers.testonly.routes.StubController.submitStubForNewJourneyV2) {
+        <h1 class="form-title govuk-heading-l" id="pageHeading">Stub For starting new journey in ALF with V2 config</h1>
+
+        @textarea(
+            Textarea(
+                name = "journeyConfig",
+                id = "journeyConfig",
+                label = Label(content = Text("Journey Config")),
+                rows = 15,
+                value = stubForm("journeyConfig").value
+            )
+        )
+
+        @button(Button(name = Some("continue"), inputType = Some("submit"), content = HtmlContent("Start New Journey")))
+    }
+
+}

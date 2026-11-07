@@ -1,2 +1,191 @@
-service.name = compatible-address-lookup-frontend
-service.text = This is your new service
+# UK only mode
+service.name =
+service.homePageUrl =
+
+# No Journey
+no.journey.title.text       = No Journey
+no.journey.heading.text     = No Journey
+
+# Footer links
+footer.links.help_page.text             = Help using GOV.UK
+footer.links.help_page.url              = https://www.gov.uk/help
+footer.links.cookies.text               = Cookies
+footer.links.cookies.url                = /help/cookies
+footer.links.accessibility.text         = Accessibility statement
+footer.links.privacy_policy.text        = Privacy policy
+footer.links.privacy_policy.url         = /help/privacy
+footer.links.terms_and_conditions.text  = Terms and conditions
+footer.links.terms_and_conditions.url   = /help/terms-and-conditions
+
+footer.govukHelp.text = Help using GOV.UK
+footer.govukHelp.url = https://www.gov.uk/help
+footer.cookies.text = Cookies
+footer.cookies.url = /help/cookies
+footer.accessibility.text = Accessibility statement
+footer.privacy.text = Privacy policy
+footer.privacy.url = /help/privacy
+footer.termsConditions.text = Terms and conditions
+footer.termsConditions.url = /help/terms-and-conditions
+
+common.error.fieldRequired = This field is required
+
+constants.home = Home
+constants.back = Back
+constants.signOut = Sign out
+constants.forPostcode = for postcode
+
+constants.postcodeLabel.ukMode = UK postcode (optional)
+constants.postcodeLabel = Postcode (optional)
+
+constants.editPageAddressLine1MaxErrorMessage = Address line 1 needs to be {0} characters or less
+constants.editPageAddressLine2MaxErrorMessage = Address line 2 needs to be {0} characters or less
+constants.editPageAddressLine3MaxErrorMessage = Address line 3 needs to be {0} characters or less
+constants.editPageTownMaxErrorMessage = Town or city needs to be {0} characters or less
+constants.editPageAddressLine1MinErrorMessage = Enter the first line of address
+constants.editPageTownMinErrorMessage = Enter the town or city
+constants.editPagePostcodeErrorMessage.ukMode = Enter a valid UK postcode
+constants.editPagePostcodeErrorMessage = Enter a valid postcode
+constants.editPageCountryErrorMessage = Enter the country of the address
+constants.editPageAtLeastOneLineOrTown = Enter at least one address line or a town
+
+constants.countryPickerPageCountryErrorMessage = Enter country or territory of the address
+
+constants.errorRequired = Select an address
+constants.errorMin = Minimum length is $min
+constants.errorMax = Maximum length is $max
+
+constants.confirmSelectedAddressError1 = You have not selected any address. Please
+constants.confirmSelectedAddressError2 = search for and select your address
+
+constants.lookupErrorHeading = There is a problem
+constants.lookupPostcodeEmptyError.ukMode = Enter a UK postcode
+constants.lookupPostcodeEmptyError = Enter a postcode
+constants.lookupPostcodeInvalidError.ukMode = A UK Postcode must only contain letters A - Z, and 0 - 9
+constants.lookupPostcodeInvalidError = A postcode must only contain letters A - Z, and 0 - 9
+constants.lookupPostcodeError.ukMode = Enter a real UK Postcode e.g. AA1 1AA
+constants.lookupPostcodeError = Enter a real Postcode e.g. AA1 1AA
+
+constants.lookupFilterError = The house name or number needs to be fewer than 256 characters
+constants.lookupFilterHint = For example, The Mill, 116 or Flat 37a
+
+constants.errorText = There is a problem
+constants.noResults = We could not find a match with
+constants.differentSearch = Try a different name or number
+
+constants.noResultsPageTitle = We cannot find any addresses for
+constants.noResultsPageHeading = We cannot find any addresses for
+constants.noResultsPageEnterManually = Enter the address manually
+constants.noResultsPageDifferentPostcode = Try a different postcode
+
+constants.tooManyResultsText = Too many results, enter more details
+constants.noResultsFoundTitle = No results found
+constants.cannotFindText = We couldn''t find any results for that property name or number
+constants.anotherSearchText = Try a new search
+constants.nothingText = nothing for property name or number
+constants.nameNumberText = for name or number
+constants.youEntered = You entered:
+constants.tooManyResultsManualLink = Enter the address manually
+
+constants.intServerErrorTitle = Sorry, there is a problem with the service
+constants.intServerErrorTryAgain = Try again later.
+
+constants.notFoundErrorTitle = Page not found
+constants.notFoundErrorHeading = This page cannot be found
+constants.notFoundErrorBody = Please check that you have entered the correct web address.
+
+constants.error.prefix = Error:
+constants.error = Error
+
+constants.footer.visuallyHiddenText = Support links
+
+countryPickerPage.title = Select your country or territory
+countryPickerPage.heading = Select your country or territory
+countryPickerPage.countryLabel = Select country or territory
+countryPickerPage.submitLabel = Continue
+
+confirmPage.title = Review and confirm
+confirmPage.heading = Review and confirm
+confirmPage.infoSubheading = Your selected address
+confirmPage.infoMessage = This is how your address will look. Please double-check it and, if accurate, click on the Confirm button.
+confirmPage.submitLabel = Confirm address
+confirmPage.changeLinkText = Edit address
+confirmPage.confirmChangeText = By confirming this change, you agree that the information you have given is complete and correct.
+confirmPage.searchAgainLinkText = Search again
+
+editPage.title = Enter your address
+editPage.heading = Enter your address
+editPage.organisationLabel = Organisation
+editPage.line1Label = Address line 1
+editPage.line1.error = Enter address line 1, typically the building and street
+editPage.line2Label = Address line 2
+editPage.line2.error = Enter address line 2
+editPage.line3Label = Address line 3
+editPage.line3.error = Enter address line 3
+editPage.townLabel = Town or city
+editPage.town.error = Enter town or city
+editPage.postcodeLabel = Postcode
+editPage.postcode.error = Enter postcode
+editPage.postcodeLabel.ukMode = UK postcode
+editPage.postcodeLabel.ukMode.error = Enter UK postcode
+editPage.countryLabel = Country or territory
+editPage.submitLabel = Continue
+editPage.optional = (optional)
+
+lookupPage.title = Find your address
+lookupPage.title.ukMode = Find your UK address
+lookupPage.heading = Find your address
+lookupPage.heading.ukMode = Find your UK address
+lookupPage.filterLabel = Property name or number (optional)
+lookupPage.postcodeLabel = Postcode
+lookupPage.postcodeLabel.ukMode = UK postcode
+lookupPage.submitLabel = Continue
+lookupPage.manualAddressLinkText = Enter the address manually
+
+selectPage.title = Choose your address
+selectPage.heading = Choose your address
+selectPage.headingWithPostcode = Showing all results for
+selectPage.proposalListLabel = Please select one of the following addresses
+selectPage.optionsDivider = or
+selectPage.noneOfThese = None of these
+selectPage.submitLabel = Continue
+selectPage.editAddressLinkText = Enter your address manually
+selectPage.searchAgainLinkText = Search again
+
+international.lookupPage.title = Find your address
+international.lookupPage.heading = Find your address
+international.lookupPage.filterLabel = Type a part of address or postcode
+international.lookupPage.submitLabel = Continue
+international.lookupPage.manualAddressLinkText = Enter your address manually
+
+international.selectPage.title = Choose your address
+international.selectPage.heading = Choose your address
+international.selectPage.headingWithPostcode = Showing all results for
+international.selectPage.proposalListLabel = Please select one of the following addresses
+international.selectPage.optionsDivider = or
+international.selectPage.noneOfThese = None of these
+international.selectPage.submitLabel = Continue
+international.selectPage.editAddressLinkText = Enter your address manually
+international.selectPage.searchAgainLinkText = Search again
+
+international.editPage.title = Enter your address
+international.editPage.heading = Enter your address
+international.editPage.organisationLabel = Organisation
+international.editPage.line1Label = Address line 1
+international.editPage.line2Label = Address line 2
+international.editPage.line3Label = Address line 3
+international.editPage.townLabel = Town or city
+international.editPage.postcodeLabel = Postcode
+international.editPage.countryLabel = Country or territory
+international.editPage.submitLabel = Continue
+
+international.confirmPage.title = Review and confirm
+international.confirmPage.heading = Review and confirm
+international.confirmPage.infoSubheading = Your selected address
+international.confirmPage.infoMessage = This is how your address will look. Please double-check it and, if accurate, click on the Confirm button.
+international.confirmPage.submitLabel = Confirm address
+international.confirmPage.changeLinkText = Edit address
+international.confirmPage.confirmChangeText = By confirming this change, you agree that the information you have given is complete and correct.
+international.confirmPage.searchAgainLinkText = Search again
+
+phaseBannerHtml = This is a new service – your <a href="$link" class="govuk-link">feedback</a> will help us to improve it.
+country.noResult = No results found

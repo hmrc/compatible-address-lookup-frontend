@@ -1,0 +1,112 @@
+@*
+ * Copyright 2025 HM Revenue & Customs
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ *@
+
+@import config.FrontendAppConfig
+@import uk.gov.hmrc.hmrcfrontend.views.config.StandardBetaBanner
+@import uk.gov.hmrc.hmrcfrontend.views.html.helpers.{HmrcAccessibleAutocompleteCss, HmrcAccessibleAutocompleteJavascript, HmrcStandardPage}
+@import uk.gov.hmrc.hmrcfrontend.views.viewmodels.hmrcstandardpage.{Banners, HmrcStandardPageParams, ServiceURLs, TemplateOverrides}
+@import model.v2.JourneyDataV2
+@import uk.gov.hmrc.govukfrontend.views.Implicits.RichServiceNavigation
+
+@this(
+        hmrcStandardPage: HmrcStandardPage,
+        autocompleteCss: HmrcAccessibleAutocompleteCss,
+        autocompleteJavascript: HmrcAccessibleAutocompleteJavascript,
+        hmrcReportTechnicalIssueHelper: HmrcReportTechnicalIssueHelper,
+        hmrcTimeoutDialogHelper: HmrcTimeoutDialogHelper
+)
+
+@(pageTitle: String, journeyData: JourneyDataV2)(contentBlock: Html)(implicit request: RequestHeader, messages: Messages, appConfig: FrontendAppConfig)
+
+@resolvedJourneyConfig = @{
+    journeyData.resolveConfigV2(appConfig)
+}
+
+@content = {
+    @contentBlock
+    @hmrcReportTechnicalIssueHelper()
+}
+
+@fullTitle = @{
+    if (messages.isDefinedAt("navTitle")) s"$pageTitle - ${messages("navTitle")} - GOV.UK"
+    else pageTitle
+}
+
+@combinedAdditionalHead = {
+    @resolvedJourneyConfig.options.timeoutConfig.map( timeoutConfig =>
+        hmrcTimeoutDialogHelper(
+            countdown = Some(120),
+            title = None,
+            keepAliveUrl = timeoutConfig.timeoutKeepAliveUrl.orElse(Some("/find-address/renewSession")),
+            timeout = Some(timeoutConfig.timeoutAmount),
+            signOutUrl = s"/find-address/destroySession?timeoutUrl=${timeoutConfig.timeoutUrl}"
+        )
+    )
+
+    @autocompleteCss()
+}
+
+@hmrcStandardPage(
+    HmrcStandardPageParams(
+        pageTitle = Some(fullTitle),
+        serviceName = Option.when(
+            messages.isDefinedAt("navTitle") && !resolvedJourneyConfig.options.newGovUkServiceNavigationEnabled
+        )(messages("navTitle")),
+        serviceURLs = ServiceURLs(
+            serviceUrl = Some(resolvedJourneyConfig.options.serviceHref.getOrElse("")),
+            signOutUrl = resolvedJourneyConfig.options.signOutHref,
+            accessibilityStatementUrl = resolvedJourneyConfig.options.accessibilityFooterUrl
+        ),
+        banners = {
+            if (resolvedJourneyConfig.options.showPhaseBanner) {
+                Banners(
+                    displayHmrcBanner = resolvedJourneyConfig.options.includeHMRCBranding,
+                    phaseBanner = Some(
+                        PhaseBanner(
+                            tag = Some(Tag(
+                                content = HtmlContent(resolvedJourneyConfig.options.phase)
+                            )),
+                            content = uk.gov.hmrc.govukfrontend.views.html.components.HtmlContent(
+                                messages("phaseBannerHtml").replace("$link", resolvedJourneyConfig.options.phaseFeedbackLink)
+                            )
+                        )
+                    )
+                )
+            }
+            else {
+                Banners(displayHmrcBanner = resolvedJourneyConfig.options.includeHMRCBranding)
+            }
+        },
+        templateOverrides = TemplateOverrides(
+            additionalHeadBlock = Some(combinedAdditionalHead),
+            additionalScriptsBlock = Some(autocompleteJavascript())
+        ),
+        isWelshTranslationAvailable =
+            !(resolvedJourneyConfig.options.disableTranslations || resolvedJourneyConfig.options.newGovUkServiceNavigationEnabled),
+        backLink = {
+            if (resolvedJourneyConfig.options.showBackButtons) Some(BackLink.mimicsBrowserBackButtonViaJavaScript)
+            else None
+        },
+        serviceNavigation = Option.when(resolvedJourneyConfig.options.newGovUkServiceNavigationEnabled) {
+            val serviceNav = ServiceNavigation(serviceName = Option.when(messages.isDefinedAt("navTitle"))(messages("navTitle")))
+            if(resolvedJourneyConfig.options.disableTranslations) {
+                serviceNav
+            } else {
+                serviceNav.withLanguageToggle()
+            }
+        }
+    )
+)(content)
