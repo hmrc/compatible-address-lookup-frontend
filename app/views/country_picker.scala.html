@@ -1,0 +1,92 @@
+@*
+ * Copyright 2024 HM Revenue & Customs
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ *@
+
+@import address.v2.Country
+@import config.FrontendAppConfig
+@import uk.gov.hmrc.govukfrontend.views.Implicits.RichSelect
+@import uk.gov.hmrc.govukfrontend.views.html.components
+@import uk.gov.hmrc.govukfrontend.views.viewmodels._
+@import uk.gov.hmrc.hmrcfrontend.views.Implicits.RichErrorSummary
+@import views.ViewHelper
+@import views.html.templates.Layout
+@import model.v2.JourneyDataV2
+@import model.CountryPicker
+
+@this(
+        form: FormWithCSRF,
+        button: GovukButton,
+        select: GovukSelect,
+        govukErrorSummary: GovukErrorSummary,
+        page: Layout)
+
+@(id: String,
+    journeyData: JourneyDataV2,
+    countryPickerForm: Form[CountryPicker],
+    countries: Seq[Country],
+    message: Option[String] = None
+)(implicit request: Request[?], messages: Messages, appConfig: FrontendAppConfig)
+
+@errorPrefix = @{s"${messages("constants.error.prefix")} "}
+
+@titleWithError = @{
+    val baseTitle = messages("countryPickerPage.title")
+    if(countryPickerForm.errors) {
+        errorPrefix + baseTitle
+    } else {
+        baseTitle
+    }
+}
+
+@resolvedConf = @{
+    journeyData.resolveConfigV2(appConfig)
+}
+
+@page(titleWithError, journeyData) {
+
+  @form(routes.AddressLookupController.handleCountryPicker(id)) {
+      @if(countryPickerForm.errors.nonEmpty) {
+          @govukErrorSummary(ErrorSummary().withFormErrorsAsText(countryPickerForm))
+      }
+
+      <h1 class="@{resolvedConf.options.pageHeadingStyle}" id="pageHeading">
+        @messages("countryPickerPage.heading")
+      </h1>
+
+      @if(message.isDefined) {
+      <div class="highlight-message highlight-message--full-width">
+        <p>@{message.get}</p>
+      </div>
+      }
+
+      @select(components.Select(
+          id = "countryCode",
+          name = "countryCode",
+          label = Label(content = HtmlContent(messages("countryPickerPage.countryLabel"))),
+          hint = if(messages.isDefinedAt("countryPickerPage.afterHeadingText")) {
+              Some(Hint(content = HtmlContent(messages("countryPickerPage.afterHeadingText"))))
+          } else {
+              None
+          },
+          errorMessage = countryPickerForm("countryCode").error.map(fe => ErrorMessage(content = HtmlContent(fe.message), visuallyHiddenText = Some(messages("constants.error")))),
+          items = ViewHelper.countriesToSelectItems(countries, countryPickerForm),
+          formGroup = FormGroup(classes = Some("form-field-group"))
+      ).asAccessibleAutocomplete())
+
+      @button(Button(content = HtmlContent(messages("countryPickerPage.submitLabel")),
+          name=Some("continue"),
+          inputType=Some("submit"), attributes = Map("id" -> "continue")))
+  }
+}

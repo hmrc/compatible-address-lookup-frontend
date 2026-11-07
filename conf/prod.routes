@@ -1,3 +1,4 @@
 # Add all the application routes to the app.routes file
-->         /compatible-address-lookup-frontend              app.Routes
+->         /find-address              app.Routes
+->         /api                       api.Routes
 ->         /                          health.Routes

@@ -1,0 +1,100 @@
+/*
+ * Copyright 2024 HM Revenue & Customs
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+import itutil.IntegrationSpecBase
+import play.api.http.HeaderNames
+import play.api.http.Status.*
+import play.api.i18n.Lang
+import play.api.libs.ws.WSResponse
+
+import java.util.UUID
+
+class NotFoundISpec extends IntegrationSpecBase {
+
+  "Not Found" when {
+    "the Welsh content header isn't set and Welsh object isn't provided in config" should {
+      "render in English" in {
+        val testJourneyId = UUID.randomUUID().toString
+        val fResponse = buildClientLookupAddress(s"notfound", testJourneyId)
+          .withHttpHeaders(HeaderNames.COOKIE -> sessionCookieWithCSRF, "Csrf-Token" -> "nocheck")
+          .get()
+
+        val res: WSResponse = await(fResponse)
+        res.status.shouldBe(NOT_FOUND)
+
+        val doc = getDocFromResponse(res)
+        doc.title.shouldBe(messages("constants.notFoundErrorTitle"))
+        doc.h1 should have(text(messages("constants.notFoundErrorHeading")))
+        doc.paras should have(elementWithValue(messages("constants.notFoundErrorBody")))
+      }
+    }
+
+    "the Welsh content header is set and Welsh object isn't provided in config" should {
+      "render in English" in {
+        val testJourneyId = UUID.randomUUID().toString
+        val fResponse = buildClientLookupAddress(s"notfound", testJourneyId)
+          .withHttpHeaders(
+            HeaderNames.COOKIE -> sessionCookieWithWelshCookie(useWelsh = false),
+            "Csrf-Token" -> "nocheck"
+          )
+          .get()
+
+        val res: WSResponse = await(fResponse)
+        res.status.shouldBe(NOT_FOUND)
+
+        val doc = getDocFromResponse(res)
+        doc.title.shouldBe(messages("constants.notFoundErrorTitle"))
+        doc.h1 should have(text(messages("constants.notFoundErrorHeading")))
+        doc.paras should have(elementWithValue(messages("constants.notFoundErrorBody")))
+      }
+    }
+
+    "the Welsh content header is set and Welsh object is provided in config" should {
+      "render in English" in {
+        val testJourneyId = UUID.randomUUID().toString
+        val fResponse = buildClientLookupAddress(s"notfound", testJourneyId)
+          .withHttpHeaders(HeaderNames.COOKIE -> sessionCookieWithWelshCookie(useWelsh = false), "Csrf-Token" -> "nocheck")
+          .get()
+
+        val res: WSResponse = await(fResponse)
+        res.status.shouldBe(NOT_FOUND)
+
+
+        val doc = getDocFromResponse(res)
+        doc.title.shouldBe(messages("constants.notFoundErrorTitle"))
+        doc.h1 should have(text(messages("constants.notFoundErrorHeading")))
+        doc.paras should have(elementWithValue(messages("constants.notFoundErrorBody")))
+      }
+    }
+
+    "the Welsh content header is set and Welsh object provided in config" should {
+      "render in Welsh" in {
+        val testJourneyId = UUID.randomUUID().toString
+        val fResponse = buildClientLookupAddress(s"notfound", testJourneyId)
+          .withHttpHeaders(HeaderNames.COOKIE -> sessionCookieWithCSRFAndLang(), "Csrf-Token" -> "nocheck")
+          .get()
+
+        val res: WSResponse = await(fResponse)
+        res.status.shouldBe(NOT_FOUND)
+
+        val doc = getDocFromResponse(res)
+        doc.title.shouldBe(messages(Lang("cy"), "constants.notFoundErrorTitle"))
+        doc.h1 should have(text(messages(Lang("cy"), "constants.notFoundErrorHeading")))
+        doc.paras should have(elementWithValue(messages(Lang("cy"), "constants.notFoundErrorBody")))
+      }
+    }
+  }
+}
