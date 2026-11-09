@@ -89,8 +89,7 @@ class StubControllerSpec extends PlaySpec
         """{
           |  "version": 2,
           |  "options": {
-          |    "continueUrl": "This will be ignored",
-          |    "useNewGovUkServiceNavigation": false
+          |    "continueUrl": "This will be ignored"
           |  },
           |  "labels": {
           |    "en": {
@@ -149,8 +148,7 @@ class StubControllerSpec extends PlaySpec
         """{
           |  "version": 2,
           |  "options": {
-          |    "continueUrl": "This will be ignored",
-          |    "useNewGovUkServiceNavigation": false
+          |    "continueUrl": "This will be ignored"
           |  },
           |  "labels": {
           |    "en": {

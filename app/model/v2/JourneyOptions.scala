@@ -37,8 +37,7 @@ case class JourneyOptions(
                            manualAddressEntryConfig: Option[ManualAddressEntryConfig] = None,
                            timeoutConfig: Option[TimeoutConfig] = None,
                            serviceHref: Option[String] = None,
-                           pageHeadingStyle: Option[String] = None,
-                           useNewGovUkServiceNavigation: Option[Boolean] = Some(false)
+                           pageHeadingStyle: Option[String] = None
                          ) {
 
   val isUkMode: Boolean = ukMode contains true

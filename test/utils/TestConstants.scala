@@ -211,7 +211,7 @@ object TestConstants {
   val selectPageConfigMinimal = SelectPageConfig(None, None, None)
 
   val journeyOptionsMinimal = JourneyOptions("testUrl", None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None)
-  val journeyOptionsMinimalJson: JsValue = Json.parse("""{"continueUrl":"testUrl", "useNewGovUkServiceNavigation":false}""")
+  val journeyOptionsMinimalJson: JsValue = Json.parse("""{"continueUrl":"testUrl"}""")
 
   val journeyConfigV2 = JourneyConfigV2(2, journeyOptionsMinimal, Some(journeyLabelsMinimal))
   val journeyConfigV2Json: JsValue = Json.parse(s"""{"version":2, "options":$journeyOptionsMinimalJson, "labels":$emptyJson}""")
@@ -285,8 +285,7 @@ object TestConstants {
           timeoutAmount = 120,
           timeoutUrl = "testTimeoutUrl",
           timeoutKeepAliveUrl = Some("testTimeoutKeepAliveUrl")
-        )),
-        useNewGovUkServiceNavigation = Some(true)
+        ))
       ),
       labels = Some(JourneyLabels(
         en = Some(LanguageLabels(
@@ -401,7 +400,6 @@ object TestConstants {
       |      "version":2,
       |      "options":{
       |         "continueUrl":"testContinueUrl",
-      |         "useNewGovUkServiceNavigation" : true,
       |         "homeNavHref":"testNavHref",
       |         "accessibilityFooterUrl": "testAccessibilityFooterUrl",
       |         "phaseFeedbackLink":"testFeedbackLink",
@@ -588,8 +586,7 @@ object TestConstants {
       |   "config":{
       |      "version":2,
       |      "options":{
-      |         "continueUrl":"testContinueUrl",
-      |         "useNewGovUkServiceNavigation" : false
+      |         "continueUrl":"testContinueUrl"
       |      }
       |   }
       |}
