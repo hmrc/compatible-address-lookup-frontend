@@ -1,5 +1,36 @@
 # microservice specific routes
 
-->         /hmrc-frontend           hmrcfrontend.Routes
-GET        /                        uk.gov.hmrc.compatibleaddresslookupfrontend.controllers.HelloWorldController.helloWorld
-GET        /assets/*file            controllers.Assets.versioned(path = "/public", file: Asset)
+GET  /no-journey                 @controllers.AddressLookupController.noJourney()
+GET  /:id/begin                  @controllers.AddressLookupController.begin(id: String)
+GET  /:id/country-picker         @controllers.AddressLookupController.countryPicker(id: String)
+POST /:id/country-picker         @controllers.AddressLookupController.handleCountryPicker(id: String)
+
+GET  /:id/lookup                 @controllers.AbpAddressLookupController.lookup(id: String, postcode: Option[String] ?= None, filter : Option[String] ?= None)
+POST /:id/lookup                 @controllers.AbpAddressLookupController.postLookup(id: String)
+GET  /:id/select                 @controllers.AbpAddressLookupController.select(id: String, postcode: String, filter: Option[String] ?= None)
+POST /:id/select                 @controllers.AbpAddressLookupController.handleSelect(id: String, filter: Option[String], postcode: String)
+GET  /:id/edit                   @controllers.AbpAddressLookupController.edit(id: String, lookUpPostCode: Option[String] ?= None)
+POST /:id/edit                   @controllers.AbpAddressLookupController.handleEdit(id: String)
+GET  /:id/confirm                @controllers.AbpAddressLookupController.confirm(id: String)
+POST /:id/confirm                @controllers.AbpAddressLookupController.handleConfirm(id: String)
+
+GET  /:id/international/lookup   @controllers.InternationalAddressLookupController.lookup(id: String, filter: Option[String])
+POST /:id/international/lookup   @controllers.InternationalAddressLookupController.postLookup(id: String)
+GET  /:id/international/select   @controllers.InternationalAddressLookupController.select(id: String, filter: String)
+POST /:id/international/select   @controllers.InternationalAddressLookupController.handleSelect(id: String, filter: String)
+GET  /:id/international/edit     @controllers.InternationalAddressLookupController.edit(id: String)
+POST /:id/international/edit     @controllers.InternationalAddressLookupController.handleEdit(id: String)
+GET  /:id/international/confirm  @controllers.InternationalAddressLookupController.confirm(id: String)
+POST /:id/international/confirm  @controllers.InternationalAddressLookupController.handleConfirm(id: String)
+
+GET  /renewSession               @controllers.AddressLookupController.renewSession()
+GET  /destroySession             @controllers.AddressLookupController.destroySession(timeoutUrl: uk.gov.hmrc.play.bootstrap.binders.RedirectUrl)
+
+# Other
+GET  /language/:lang             @controllers.LanguageController.switchToLanguage(lang: String)
+GET  /sign-out                   @controllers.auth.SignOutController.signOut()
+
+
+->         /hmrc-frontend            hmrcfrontend.Routes
+GET        /assets/*file             controllers.Assets.at(path = "/public", file)
+
